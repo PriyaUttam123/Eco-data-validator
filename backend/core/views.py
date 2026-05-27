@@ -10,6 +10,8 @@ class IngestView(views.APIView):
     Query Params: 
         type: 'sap', 'utility', 'travel'
         tenant_id: ID of the tenant
+    
+    Accepts: CSV File upload (key: 'file') OR raw JSON payload.
     """
     def post(self, request, *args, **kwargs):
         ingestion_type = request.query_params.get('type')
@@ -17,16 +19,16 @@ class IngestView(views.APIView):
         
         if not ingestion_type or not tenant_id:
             return response.Response(
-                {'error': 'Missing type or tenant_id query parameters'}, 
+                {'error': 'Missing type (sap/utility/travel) or tenant_id query parameters'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
             
         try:
             tenant = Tenant.objects.get(id=tenant_id)
         except Tenant.DoesNotExist:
-            return response.Response({'error': 'Tenant not found'}, status=status.HTTP_404_NOT_FOUND)
+            return response.Response({'error': f'Tenant with ID {tenant_id} not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Create Ingestion Job
+        # Create Ingestion Job to track the process
         job = DataIngestionJob.objects.create(
             tenant=tenant,
             status='PROCESSING',
@@ -34,11 +36,14 @@ class IngestView(views.APIView):
         )
 
         try:
-            # Get data from file or body
+            # Handle both File uploads and raw JSON body
             if 'file' in request.FILES:
                 file_content = request.FILES['file'].read()
             else:
                 file_content = request.body
+
+            if not file_content:
+                raise ValueError("No data provided in request body or file upload")
 
             records_data = []
             if ingestion_type == 'sap':
@@ -48,9 +53,12 @@ class IngestView(views.APIView):
             elif ingestion_type == 'travel':
                 records_data = parse_travel_json(file_content, tenant, job)
             else:
-                return response.Response({'error': 'Invalid ingestion type'}, status=status.HTTP_400_BAD_REQUEST)
+                raise ValueError(f"Unsupported ingestion type: {ingestion_type}")
 
-            # Bulk create staging records
+            if not records_data:
+                raise ValueError("No records were parsed from the provided input")
+
+            # Bulk create for performance
             StagingActivityData.objects.bulk_create([
                 StagingActivityData(**data) for data in records_data
             ])
@@ -59,34 +67,44 @@ class IngestView(views.APIView):
             job.save()
 
             return response.Response({
+                'status': 'success',
                 'message': f'Successfully ingested {len(records_data)} records',
-                'job_id': job.id
+                'job_id': job.id,
+                'source': ingestion_type
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             job.status = 'FAILED'
             job.save()
-            return response.Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return response.Response({
+                'status': 'error',
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class StagingRecordViewSet(viewsets.ModelViewSet):
     """
-    GET /api/records/
-    PATCH /api/records/<id>/review/
+    GET /api/records/ - Returns staging records, filterable by status.
+    PATCH /api/records/<id>/review/ - Approval/Rejection endpoint.
     """
     queryset = StagingActivityData.objects.all().order_by('-created_at')
     serializer_class = StagingActivityDataSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        # Allow filtering by status specifically as requested: UNREVIEWED, SUSPICIOUS, APPROVED
         status_filter = self.request.query_params.get('status')
         if status_filter:
-            queryset = queryset.filter(status=status_filter)
+            queryset = queryset.filter(status=status_filter.upper())
         return queryset
 
     @action(detail=True, methods=['patch'], url_path='review')
     def review(self, request, pk=None):
+        """
+        Analyst action to APPROVE or REJECT a record.
+        Approval sets is_locked=True.
+        """
         record = self.get_object()
-        new_status = request.data.get('status')
+        new_status = request.data.get('status', '').upper()
         
         if new_status not in ['APPROVED', 'REJECTED']:
             return response.Response(
@@ -96,14 +114,13 @@ class StagingRecordViewSet(viewsets.ModelViewSet):
             
         if record.is_locked:
             return response.Response(
-                {'error': 'Record is locked and cannot be reviewed again'}, 
+                {'error': 'Record is locked (already approved) and cannot be modified.'}, 
                 status=status.HTTP_403_FORBIDDEN
             )
 
         record.status = new_status
+        # Strictly following: "sets is_locked=True upon approval"
         if new_status == 'APPROVED':
-            record.is_locked = True
-        elif new_status == 'REJECTED':
             record.is_locked = True
             
         record.save()
