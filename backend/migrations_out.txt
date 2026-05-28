@@ -1,0 +1,52 @@
+Was stagingactivitydata.is_validated renamed to stagingactivitydata.is_locked (a BooleanField)? [y/N] Traceback (most recent call last):
+  File "C:\Users\priya\Eco-data-validator\backend\manage.py", line 22, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\priya\Eco-data-validator\backend\manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\__init__.py", line 443, in execute_from_command_line
+    utility.execute()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\__init__.py", line 437, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\base.py", line 420, in run_from_argv
+    self.execute(*args, **cmd_options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\base.py", line 464, in execute
+    output = self.handle(*args, **options)
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\base.py", line 111, in wrapper
+    res = handle_func(*args, **kwargs)
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\core\management\commands\makemigrations.py", line 238, in handle
+    changes = autodetector.changes(
+        graph=loader.graph,
+    ...<2 lines>...
+        migration_name=self.migration_name,
+    )
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\db\migrations\autodetector.py", line 68, in changes
+    changes = self._detect_changes(convert_apps, graph)
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\db\migrations\autodetector.py", line 202, in _detect_changes
+    self.create_renamed_fields()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\db\migrations\autodetector.py", line 1086, in create_renamed_fields
+    if self.questioner.ask_rename(
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        model_name, rem_field_name, field_name, field
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\db\migrations\questioner.py", line 226, in ask_rename
+    return self._boolean_input(
+           ~~~~~~~~~~~~~~~~~~~^
+        msg
+        ^^^
+    ...<7 lines>...
+        False,
+        ^^^^^^
+    )
+    ^
+  File "C:\Users\priya\Eco-data-validator\backend\venv\Lib\site-packages\django\db\migrations\questioner.py", line 101, in _boolean_input
+    result = input()
+KeyboardInterrupt
+^C

@@ -1,0 +1,2 @@
+
+0 static files copied to 'C:\Users\priya\Eco-data-validator\backend\staticfiles', 157 unmodified.
