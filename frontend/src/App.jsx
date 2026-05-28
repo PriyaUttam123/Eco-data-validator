@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import IngestionControls from './components/IngestionControls';
+import React, { useState, useEffect, Suspense } from 'react';
+import Sidebar from './components/Sidebar';
+import TopHeader from './components/TopHeader';
+import DashboardHeader from './components/DashboardHeader';
+import KPICards from './components/KPICards';
+import IngestionBreakdown from './components/IngestionBreakdown';
+import AuditLogPanel from './components/AuditLogPanel';
 import RecordTable from './components/RecordTable';
+import RecentIngestions from './components/RecentIngestions';
+import IngestionControls from './components/IngestionControls';
 import { fetchRecords } from './services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
   const [records, setRecords] = useState([]);
-  const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showIngestModal, setShowIngestModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await fetchRecords(filter);
-      setRecords(response.data);
+      const response = await fetchRecords();
+      setRecords(response.data || []);
     } catch (err) {
       console.error("Failed to fetch records", err);
     } finally {
@@ -22,56 +31,87 @@ function App() {
 
   useEffect(() => {
     loadData();
-  }, [filter]);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-4 md:p-8">
-      <header className="max-w-6xl mx-auto mb-10 flex justify-between items-center">
-        <div>
-          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Eco Data Validator
-          </h1>
-          <p className="text-slate-400 mt-2">Sustainability Analyst Dashboard</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex glass rounded-lg overflow-hidden">
-            {['', 'UNREVIEWED', 'SUSPICIOUS', 'APPROVED'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 text-xs font-bold transition-all ${
-                  filter === f ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800 text-slate-400'
-                }`}
-              >
-                {f || 'ALL'}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+    <div className="flex h-screen bg-[#F8FAFC] text-slate-900 font-sans overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar activeTab={activeTab} setTab={setActiveTab} />
 
-      <main className="max-w-6xl mx-auto">
-        <IngestionControls onUploadSuccess={loadData} />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <TopHeader />
         
-        <div className="mb-4 flex justify-between items-center">
-          <h3 className="text-lg font-medium text-slate-300">Staging Area</h3>
-          <button 
-            onClick={loadData}
-            className="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-2"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Refresh
-          </button>
-        </div>
+        <main className="flex-1 overflow-y-auto bg-slate-50/50">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="p-8 pb-20"
+            >
+              <div className="max-w-[1600px] mx-auto space-y-8">
+                {activeTab === 'dashboard' && (
+                  <>
+                    <DashboardHeader onNewIngestion={() => setShowIngestModal(true)} />
+                    <KPICards records={records} />
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-2 space-y-8">
+                        <RecentIngestions records={records} loading={loading} onRefresh={loadData} />
+                      </div>
+                      <div className="space-y-8">
+                        <IngestionBreakdown />
+                        <AuditLogPanel />
+                      </div>
+                    </div>
+                  </>
+                )}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-12 h-12 border-4 border-emerald-600/20 border-t-emerald-600 rounded-full animate-spin"></div>
+                {activeTab === 'records' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h1 className="text-3xl font-black text-slate-900 tracking-tight">Review Queue</h1>
+                      <p className="text-slate-500 text-sm mt-1">Manage and validate ingested sustainability data</p>
+                    </div>
+                    <RecordTable records={records} onAction={loadData} />
+                  </div>
+                )}
+
+                {['ingestion', 'audit', 'analytics', 'settings'].includes(activeTab) && (
+                  <div className="bg-white rounded-[32px] border border-slate-200 border-dashed p-32 flex flex-col items-center text-center">
+                    <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                      <Database size={32} className="text-slate-300" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 uppercase tracking-widest">{activeTab} View</h3>
+                    <p className="text-slate-500 mt-2">Section under construction for the enterprise release.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+
+      {/* Ingestion Modal Overlay */}
+      {showIngestModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-4xl relative">
+            <button 
+              onClick={() => setShowIngestModal(false)}
+              className="absolute -top-12 right-0 text-white/60 hover:text-white flex items-center gap-2 group transition-colors"
+            >
+              <span className="text-xs font-bold tracking-widest uppercase">Close Panel</span>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </div>
+            </button>
+            <IngestionControls onUploadSuccess={() => { loadData(); setShowIngestModal(false); }} />
           </div>
-        ) : (
-          <RecordTable records={records} onAction={loadData} />
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
