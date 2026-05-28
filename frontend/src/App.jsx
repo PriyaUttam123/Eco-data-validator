@@ -1,17 +1,21 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
-import DashboardHeader from './components/DashboardHeader';
-import KPICards from './components/KPICards';
-import IngestionBreakdown from './components/IngestionBreakdown';
-import AuditLogPanel from './components/AuditLogPanel';
-import RecordTable from './components/RecordTable';
-import RecentIngestions from './components/RecentIngestions';
 import IngestionControls from './components/IngestionControls';
 import { fetchRecords } from './services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Pages
+import Dashboard from './pages/Dashboard';
+import Ingestion from './pages/Ingestion';
+import Records from './pages/Records';
+import AuditLogs from './pages/AuditLogs';
+import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
+import Auth from './pages/Auth';
+
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showIngestModal, setShowIngestModal] = useState(false);
@@ -30,13 +34,23 @@ function App() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return <Auth onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] text-slate-900 font-sans overflow-hidden">
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setTab={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setTab={setActiveTab} 
+        onLogout={() => setIsAuthenticated(false)} 
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -52,42 +66,34 @@ function App() {
               transition={{ duration: 0.2 }}
               className="p-8 pb-20"
             >
-              <div className="max-w-[1600px] mx-auto space-y-8">
+              <div className="max-w-[1600px] mx-auto">
                 {activeTab === 'dashboard' && (
-                  <>
-                    <DashboardHeader onNewIngestion={() => setShowIngestModal(true)} />
-                    <KPICards records={records} />
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-2 space-y-8">
-                        <RecentIngestions records={records} loading={loading} onRefresh={loadData} />
-                      </div>
-                      <div className="space-y-8">
-                        <IngestionBreakdown />
-                        <AuditLogPanel />
-                      </div>
-                    </div>
-                  </>
+                  <Dashboard 
+                    records={records} 
+                    loading={loading} 
+                    onRefresh={loadData} 
+                    onNewIngestion={() => setShowIngestModal(true)} 
+                  />
+                )}
+                
+                {activeTab === 'ingestion' && (
+                  <Ingestion onUploadSuccess={loadData} />
                 )}
 
                 {activeTab === 'records' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-black text-slate-900 tracking-tight">Review Queue</h1>
-                      <p className="text-slate-500 text-sm mt-1">Manage and validate ingested sustainability data</p>
-                    </div>
-                    <RecordTable records={records} onAction={loadData} />
-                  </div>
+                  <Records records={records} onAction={loadData} />
                 )}
 
-                {['ingestion', 'audit', 'analytics', 'settings'].includes(activeTab) && (
-                  <div className="bg-white rounded-[32px] border border-slate-200 border-dashed p-32 flex flex-col items-center text-center">
-                    <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-                      <Database size={32} className="text-slate-300" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900 uppercase tracking-widest">{activeTab} View</h3>
-                    <p className="text-slate-500 mt-2">Section under construction for the enterprise release.</p>
-                  </div>
+                {activeTab === 'audit' && (
+                  <AuditLogs />
+                )}
+
+                {activeTab === 'analytics' && (
+                  <Analytics />
+                )}
+
+                {activeTab === 'settings' && (
+                  <Settings />
                 )}
               </div>
             </motion.div>

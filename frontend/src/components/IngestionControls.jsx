@@ -207,6 +207,9 @@ const IngestionControls = ({ onUploadSuccess }) => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
 
         <div className="flex justify-end pt-6 border-t border-slate-100">
           <button 

@@ -10,7 +10,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setTab }) => {
+const Sidebar = ({ activeTab, setTab, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'ingestion', label: 'Ingestion', icon: FileUp },
@@ -24,8 +24,8 @@ const Sidebar = ({ activeTab, setTab }) => {
     <aside className="w-72 bg-[#0F172A] text-slate-300 flex flex-col h-full border-r border-white/5 relative z-50">
       {/* Sidebar Logo */}
       <div className="p-8 pb-10 flex items-center gap-3">
-        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 rotate-3">
-          <Database size={24} className="text-slate-900" />
+        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 rotate-3 text-slate-900">
+          <Database size={24} />
         </div>
         <div>
           <h1 className="text-lg font-black tracking-tight text-white leading-none">ECO DATA</h1>
@@ -61,16 +61,22 @@ const Sidebar = ({ activeTab, setTab }) => {
 
       {/* Profile Section */}
       <div className="p-6">
-        <div className="p-4 bg-white/5 rounded-3xl border border-white/5 group cursor-pointer hover:bg-white/10 transition-all">
+        <div className="p-4 bg-white/5 rounded-3xl border border-white/5 group transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-2xl flex items-center justify-center font-bold text-slate-900 border border-white/10">
-              JD
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-2xl flex items-center justify-center font-bold text-slate-900 border border-white/10 shrink-0">
+              AUD
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white truncate">John Doe</p>
-              <p className="text-[10px] text-slate-500 truncate font-mono tracking-tight">Lead Auditor</p>
+            <div className="flex-1 min-w-0 pr-2">
+              <p className="text-[10px] text-slate-400 truncate font-mono tracking-tight uppercase font-black">Lead Auditor</p>
+              <p className="text-[9px] text-emerald-500/50 truncate font-bold">Standard Access</p>
             </div>
-            <LogOut size={16} className="text-slate-600 hover:text-rose-400 transition-colors" />
+            <button 
+              onClick={onLogout}
+              className="p-2 bg-white/5 hover:bg-rose-500/20 text-slate-600 hover:text-rose-400 rounded-xl transition-all group/logout"
+              title="Logout Session"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </div>

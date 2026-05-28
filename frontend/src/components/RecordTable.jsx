@@ -26,9 +26,20 @@ const RecordTable = ({ records = [], onAction }) => {
   };
 
   const getRiskScore = (record) => {
-    if (record.raw_quantity < 0 || !record.unit) return { label: 'HIGH', color: 'text-rose-600 bg-rose-50 border-rose-100' };
-    if (record.status === 'SUSPICIOUS') return { label: 'MEDIUM', color: 'text-amber-600 bg-amber-50 border-amber-100' };
-    return { label: 'LOW', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' };
+    const quantity = parseFloat(record.raw_quantity);
+    
+    // HIGH Risk: Negative quantity or missing unit
+    if (quantity < 0 || !record.unit || record.unit.trim() === '') {
+      return { label: 'HIGH', color: 'text-rose-600 bg-rose-50 border-rose-200' };
+    }
+    
+    // MEDIUM Risk: Abnormal value (Suspicious status or outlier > 50k)
+    if (record.status === 'SUSPICIOUS' || quantity > 50000) {
+      return { label: 'MEDIUM', color: 'text-amber-600 bg-amber-50 border-amber-200' };
+    }
+    
+    // LOW Risk: Normal parameters
+    return { label: 'LOW', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
   };
 
   const filteredRecords = records.filter(r => {
